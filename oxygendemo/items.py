@@ -16,6 +16,7 @@ class OxygendemoItem(scrapy.Item):
     gender = scrapy.Field()
     images = scrapy.Field()
     link = scrapy.Field()
+    name = scrapy.Field()
     usd_price = scrapy.Field()
     raw_color = scrapy.Field()
     sale_discount = scrapy.Field()

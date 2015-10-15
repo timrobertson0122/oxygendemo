@@ -16,19 +16,22 @@ class OxygenSpider(CrawlSpider):
 #   # to find appropriate category listing pages,
 #   # to identify individual product pages (this rule should have a callback='parse_item'),
     rules = (
-        # Extract links matching 'category.php' (but not matching 'subsection.php')
-        # and follow links from them (since no callback means follow=True by default).
-        Rule(LinkExtractor(restrict_css=('li.tame', ), deny=('/[0-9]{2,}/', ))),
-
+        Rule(LinkExtractor(allow=('boots.aspx', ), deny=('designers.aspx', ))),
         # Extract links matching 'item.php' and parse them with the spider's method parse_item
-        Rule(LinkExtractor(restrict_css=('li.tame', )), callback='parse_item'),
+        Rule(LinkExtractor(allow=('Running-sneaker.aspx', )), callback='parse_item'),
     )
 
     def parse_item(self, response):
-        self.logger.info('Hi, this is an item page! %s', response.url)
+        pq = PyQuery(response.body)
         item = OxygendemoItem()
+        item['designer'] = self.item_designer(pq)
+        item['name'] = self.item_name(pq)
         item['link'] = response.url
-        item['code'] = response.css('h2::text').extract()
-        item['usd_price'] = response.css('span.price').extract()
-        item['description'] = response.css('div#ui-accordion-accordion-panel-0.innerHtml').extract()
+        
         return item
+
+    def item_designer(self, pq):
+        return pq('.brand_name a').text()
+    
+    def item_name(self, pq):
+        return pq('h2').text()
