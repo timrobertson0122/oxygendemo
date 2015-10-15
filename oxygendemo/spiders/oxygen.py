@@ -35,3 +35,6 @@ class OxygenSpider(CrawlSpider):
     
     def item_name(self, pq):
         return pq('h2').text()
+
+    def item_url(self, pq):
+        return response.url
