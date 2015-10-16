@@ -8,17 +8,10 @@ from pyquery import PyQuery
 class OxygenSpider(CrawlSpider):
     name = "oxygenboutique.com"
     allowed_domains = ["oxygenboutique.com"]
-    start_urls = ['http://www.oxygenboutique.com/clothing.aspx',
-                  'http://www.oxygenboutique.com/Shoes-All.aspx',
-                  'http://www.oxygenboutique.com/accessories-all.aspx',
-                  'http://www.oxygenboutique.com/Sale-In.aspx'
-    ]
-#   # to find appropriate category listing pages,
-#   # to identify individual product pages (this rule should have a callback='parse_item'),
+    start_urls = ['http://www.oxygenboutique.com/clothing.aspx?ViewAll=1', 'http://www.oxygenboutique.com/Shoes-All.aspx?ViewAll=1', 'http://www.oxygenboutique.com/accessories-all.aspx?ViewAll=1', 'http://www.oxygenboutique.com/Sale-In.aspx?S=1&ViewAll=1']
+
     rules = (
-        # Rule(LinkExtractor(allow=('Sale-In.aspx', ), deny=('designers.aspx', ))),
-        # Extract links matching 'item.php' and parse them with the spider's method parse_item
-        Rule(LinkExtractor(allow=('Leather-Trim-Slouch-Pant.aspx', )), callback='parse_item'),
+        Rule(LinkExtractor(restrict_css=('.DataContainer')), callback='parse_item'),
     )
 
     def item_code(self, response):
@@ -34,13 +27,18 @@ class OxygenSpider(CrawlSpider):
         return response.url
 
     def item_gbp_price(self, pq):
-        return pq('.price').text().split(' ')[-1]
+        if pq('.offsetMark').text() != (''):
+          price = pq('.offsetMark').text()
+        else:
+          price = pq('.price').text()
+        return price
 
     def item_sale_discount(self, pq):
-        original_price_int = eval(pq('.offsetMark').text())
-        sale_price_int = eval(pq('.price').text().split(' ')[-1])
-        discount_percent = (sale_price_int / original_price_int) * 100
-        return discount_percent
+        if pq('.offsetMark').text() != (''):
+          original_price_int = eval(pq('.offsetMark').text())
+          sale_price_int = eval(pq('.price').text().split(' ')[-1])
+          discount_percent = (sale_price_int / original_price_int) * 100
+          return discount_percent
 
     def item_description(self, pq):
         return pq('h3').eq(0).next().text()
@@ -54,8 +52,8 @@ class OxygenSpider(CrawlSpider):
     def item_stock_status(self, pq):
         stock_dict = {}
         for i in pq('.productpage_box option'):
-          if any(ch.isdigit() for ch in i.text): 
-            if i.text.isdigit():
+          if not "Please Select" in i.text: 
+            if not "Sold Out" in i.text:
               stock_dict.update({i.text:3})
             else:
               d = i.text.split(' ')[0]
@@ -68,8 +66,16 @@ class OxygenSpider(CrawlSpider):
     def item_gender(self, pq):
       return 'F'
 
-    def item_type(self, pq):
-      return 'A'
+    def item_type(self, response):
+      referer = response.request.headers.get('Referer', None)
+      if "clothing" in referer:
+        return 'A'
+      elif "Shoes" in referer:
+        return 'S'
+      elif "accessories" in referer:
+        return 'R'
+      else:
+        return 'Unknown'
 
     def parse_item(self, response):
         pq = PyQuery(response.body)
@@ -85,7 +91,7 @@ class OxygenSpider(CrawlSpider):
         item['sale_discount'] = self.item_sale_discount(pq)
         item['images'] = self.item_images(pq)
         item['stock_status'] = self.item_stock_status(pq)
-        item['type'] = self.item_type(pq)
-        return item
+        item['type'] = self.item_type(response)
+        yield item
 
     
