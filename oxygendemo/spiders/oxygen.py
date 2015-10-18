@@ -9,14 +9,15 @@ class OxygenSpider(CrawlSpider):
     name = "oxygenboutique.com"
     allowed_domains = ["oxygenboutique.com"]
     start_urls = [
-        'http://www.oxygenboutique.com/clothing.aspx?ViewAll=1',
-        'http://www.oxygenboutique.com/Shoes-All.aspx?ViewAll=1',
-        'http://www.oxygenboutique.com/accessories-all.aspx?ViewAll=1',
-        'http://www.oxygenboutique.com/Sale-In.aspx?S=1&ViewAll=1'
+        'http://www.oxygenboutique.com/clothing.aspx',
+        'http://www.oxygenboutique.com/Shoes-All.aspx',
+        'http://www.oxygenboutique.com/accessories-all.aspx',
+        'http://www.oxygenboutique.com/Sale-In.aspx'
     ]
 
     rules = (
-        Rule(LinkExtractor(restrict_css=('.DataContainer')),
+        Rule(LinkExtractor(restrict_css=('.tame'), deny=('pNo'))),
+        Rule(LinkExtractor(restrict_css=('.itm')),
              callback='parse_item'),
     )
 
