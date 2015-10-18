@@ -16,68 +16,62 @@ class OxygenSpider(CrawlSpider):
     ]
 
     rules = (
-        Rule(LinkExtractor(restrict_css=('.DataContainer')),
-             callback='parse_item'),
+        Rule(LinkExtractor(restrict_css=('.itm')), callback='parse_item'),
     )
 
     def item_code(self, response):
-        return response.url.split('/')[-1].split('.')[0].lower()
+        i_code = response.url.split('/')[-1].split('.')[0].lower()
+        return i_code
 
-    def item_designer(self, el):
-        return el('.brand_name a').text()
+    def item_gender(self, el):
+        return 'F'
 
     def item_name(self, el):
-        return el('h2').text()
+        i_name = el('h2').text()
+        return i_name
 
-    def item_url(self, response):
-        return response.url
+    def item_description(self, el):
+        i_desc = el('h3').eq(0).next().text()
+        return i_desc
+
+    def item_designer(self, el):
+        i_desi = el('.brand_name a').text()
+        return i_desi
 
     def item_gbp_price(self, el):
         if el('.offsetMark').text() != (''):
-            price = el('.offsetMark').text()
+            i_price = el('.offsetMark').text()
         else:
-            price = el('.price').text()
-        return price
+            i_price = el('.price').text()
+        return i_price
 
     def item_sale_discount(self, el):
         if el('.offsetMark').text() != (''):
             original_price_int = eval(el('.offsetMark').text())
             sale_price_int = eval(el('.price').text().split(' ')[-1])
-            discount_percent = (sale_price_int / original_price_int) * 100
-            return discount_percent
-
-    def item_description(self, el):
-        return el('h3').eq(0).next().text()
+            i_discount_percent = (sale_price_int / original_price_int) * 100
+            return i_discount_percent
 
     def item_images(self, el):
-        img_array = []
+        i_img_array = []
         for i in el('img[src*="GetImage"]'):
-            img_array.append(i.attrib["src"])
-        return img_array
+            i_img_array.append(i.attrib["src"])
+        return i_img_array
+
+    def item_url(self, response):
+        i_url = response.url
+        return i_url
 
     def item_stock_status(self, el):
-        stock_dict = {}
+        i_stock_dict = {}
         for i in el('.productpage_box option'):
             if "Please Select" not in i.text:
                 if "Sold Out" not in i.text:
-                    stock_dict.update({i.text: 3})
+                    i_stock_dict.update({i.text: 3})
                 else:
                     d = i.text.split(' ')[0]
-                    stock_dict.update({d: 1})
-        return stock_dict
-
-    def item_raw_color(self, el):
-        return 'None'
-
-    def item_gender(self, el):
-        return 'F'
-
-    def is_item_jewellery(self, el):
-        product_description = el('h3').eq(0).next().text().lower()
-        jewellery_list = ['bangle', 'bangles', 'bracelet', 'choker', 'ear',
-                          'earring', 'earrings', 'necklace', 'ring']
-        if any(word in product_description.split() for word in jewellery_list):
-            return True
+                    i_stock_dict.update({d: 1})
+        return i_stock_dict
 
     def item_type(self, el, response):
         referer_category = response.request.headers.get('Referer', None)
@@ -92,6 +86,16 @@ class OxygenSpider(CrawlSpider):
                 return 'R'
         else:
             return 'Unknown - Sale Item'
+
+    def item_raw_color(self, el):
+        return 'None'
+
+    def is_item_jewellery(self, el):
+        product_description = el('h3').eq(0).next().text().lower()
+        jewellery_list = ['bangle', 'bangles', 'bracelet', 'choker', 'ear',
+                          'earring', 'earrings', 'necklace', 'ring']
+        if any(word in product_description.split() for word in jewellery_list):
+            return True
 
     def parse_item(self, response):
         el = PyQuery(response.body)

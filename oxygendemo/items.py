@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-
 import scrapy
 
 
 class OxygendemoItem(scrapy.Item):
-    # define the fields for your item here:
     code = scrapy.Field()
     description = scrapy.Field()
     designer = scrapy.Field()
